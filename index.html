@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Юр-Квиз</title>
+<style>
+:root{--bg:#46178f;--bg2:#33106b;--red:#e21b3c;--blue:#1368ce;--yellow:#d89e00;--green:#26890c;--ink:#fff;--card:#fff;--text:#1d1233}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:20px;width:100%;max-width:1100px;margin:0 auto;gap:16px;text-align:center}
+.screen.on{display:flex}
+h1{font-size:clamp(34px,7vw,64px);margin:0;letter-spacing:-1px}
+h2{margin:0;font-size:clamp(22px,4vw,38px)}
+.logo{font-weight:900}
+.box{background:var(--card);color:var(--text);border-radius:12px;padding:24px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 0 rgba(0,0,0,.25)}
+input{font:inherit;padding:14px;border:2px solid #cfc6e0;border-radius:8px;font-size:18px;width:100%;text-align:center}
+input:focus{outline:3px solid #8e5cd9;border-color:#8e5cd9}
+button{font:inherit;font-weight:800;border:0;border-radius:8px;padding:14px 22px;font-size:18px;cursor:pointer;background:#333;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.danger{background:var(--red)}.primary{background:var(--blue)}.go{background:var(--green)}.ghost{background:transparent;box-shadow:none;text-decoration:underline;color:inherit;font-weight:600}
+.err{color:#c0102e;font-weight:700;min-height:20px;font-size:15px}
+.err.light{color:#ffd1d9}
+.tabs{display:flex;gap:8px}.tabs button{flex:1;background:#e8e1f5;color:var(--text);box-shadow:none}.tabs button.on{background:var(--text);color:#fff}
+.pin{font-size:clamp(48px,12vw,110px);font-weight:900;letter-spacing:8px;background:#fff;color:var(--text);border-radius:12px;padding:6px 28px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:900px}
+.chip{background:rgba(255,255,255,.18);padding:8px 16px;border-radius:30px;font-weight:700;font-size:18px}
+.qtext{background:#fff;color:var(--text);padding:20px 26px;border-radius:12px;font-size:clamp(20px,3.4vw,34px);font-weight:800;width:100%}
+.meta{display:flex;width:100%;justify-content:space-between;align-items:center;font-weight:800;font-size:20px}
+.timer{width:64px;height:64px;border-radius:50%;background:var(--bg2);display:grid;place-items:center;font-size:28px;border:4px solid #fff}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+@media(max-width:600px){.opts{grid-template-columns:1fr}}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;padding:18px;border-radius:8px;font-size:clamp(16px,2.4vw,24px);font-weight:800;color:#fff;min-height:84px;cursor:default;position:relative}
+button.opt{cursor:pointer}
+.opt .sh{font-size:30px;flex:none;width:34px;text-align:center}
+.o0{background:var(--red)}.o1{background:var(--blue)}.o2{background:var(--yellow)}.o3{background:var(--green)}
+.opt.sel{outline:6px solid #fff;outline-offset:-6px}
+.opt.dim{opacity:.25}
+.opt .cnt{margin-left:auto;font-size:28px}
+.opt .tick{margin-left:auto;font-size:30px}
+.bar{height:6px;background:rgba(255,255,255,.7);position:absolute;left:0;bottom:0;border-radius:0 0 8px 8px}
+.rows{width:100%;max-width:640px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:14px;background:rgba(255,255,255,.14);border-radius:8px;padding:12px 18px;font-size:22px;font-weight:800;text-align:left}
+.row b{margin-left:auto}
+.row.me{background:#fff;color:var(--text)}
+.big{font-size:clamp(40px,10vw,80px);font-weight:900}
+.full.ok{background:var(--green)}.full.bad{background:var(--red)}.full.wait{background:var(--bg2)}
+.podium{display:flex;align-items:flex-end;gap:10px;height:260px}
+.pod{width:min(26vw,160px);background:#fff;color:var(--text);border-radius:8px 8px 0 0;padding:8px;font-weight:800;display:flex;flex-direction:column;justify-content:flex-start;align-items:center}
+.pod.p1{height:100%;background:#ffc800}.pod.p2{height:70%;background:#d3d8de}.pod.p3{height:50%;background:#e0a063}
+.top{position:fixed;top:10px;right:14px;font-size:15px;font-weight:700;display:flex;gap:10px;align-items:center}
+.small{font-size:14px;opacity:.85}
+@media(prefers-reduced-motion:no-preference){.pulse{animation:p 1.4s ease-in-out infinite}@keyframes p{50%{transform:scale(1.04)}}}
+</style>
+</head>
+<body>
+<div class="top" id="topbar" hidden><span id="who"></span><button class="ghost" id="logout">Выйти</button></div>
+
+<!-- Вход / регистрация -->
+<section class="screen" id="s-auth">
+  <h1 class="logo">Юр-Квиз</h1>
+  <p>Юридически значимые факты — играем вместе</p>
+  <div class="box">
+    <div class="tabs"><button id="tabLogin" class="on">Вход</button><button id="tabReg">Регистрация</button></div>
+    <input id="aName" placeholder="Ваше имя" autocomplete="name" hidden>
+    <input id="aUser" placeholder="Логин" autocomplete="username">
+    <input id="aPass" type="password" placeholder="Пароль" autocomplete="current-password">
+    <div class="err" id="aErr"></div>
+    <button class="primary" id="aGo">Войти</button>
+  </div>
+</section>
+
+<!-- Меню -->
+<section class="screen" id="s-menu">
+  <h1 class="logo">Юр-Квиз</h1>
+  <div class="box" id="joinBox">
+    <input id="pinIn" inputmode="numeric" maxlength="6" placeholder="PIN-код игры">
+    <button class="primary" id="joinBtn">Войти в игру</button>
+    <div class="err" id="mErr"></div>
+  </div>
+  <button class="go" id="hostBtn" hidden>Создать игру</button>
+  <div class="small" id="stats"></div>
+  <button class="ghost" id="lbBtn">Рейтинг участников</button>
+  <div class="rows" id="lbBox"></div>
+</section>
+
+<!-- Ведущий: лобби -->
+<section class="screen" id="s-hostLobby">
+  <h2>Заходите на этот сайт и введите PIN</h2>
+  <div class="pin" id="hPin">------</div>
+  <div class="chips" id="hPlayers"></div>
+  <div id="hCount" class="small">Ждём игроков…</div>
+  <button class="go" id="startBtn">Начать игру</button>
+  <button class="ghost" id="endBtn1">Отменить игру</button>
+  <div class="err light" id="hErr"></div>
+</section>
+
+<!-- Ведущий: вопрос -->
+<section class="screen" id="s-hostQ">
+  <div class="meta"><span id="hqNum"></span><div class="timer" id="hqTimer">20</div><span id="hqAns"></span></div>
+  <div class="qtext" id="hqText"></div>
+  <div class="opts" id="hqOpts"></div>
+  <button class="danger" id="endBtn2">Завершить игру</button>
+</section>
+
+<!-- Ведущий: результаты вопроса -->
+<section class="screen" id="s-hostR">
+  <h2>Результаты вопроса</h2>
+  <div class="opts" id="hrOpts"></div>
+  <div class="rows" id="hrTop"></div>
+  <button class="primary" id="nextBtn">Дальше</button>
+  <button class="danger" id="endBtn3">Завершить игру</button>
+</section>
+
+<!-- Игрок: ожидание -->
+<section class="screen" id="s-wait">
+  <h2 id="wTitle">Вы в игре!</h2>
+  <div class="big pulse" id="wName"></div>
+  <p>Смотрите на экран ведущего</p>
+</section>
+
+<!-- Игрок: вопрос -->
+<section class="screen" id="s-pQ" style="justify-content:flex-start">
+  <div class="meta"><span id="pqNum"></span><div class="timer" id="pqTimer">20</div><span></span></div>
+  <div class="small" id="pqHint"></div>
+  <div class="opts" id="pqOpts"></div>
+  <button class="go" id="sendMulti" hidden>Ответить</button>
+</section>
+
+<!-- Игрок: результат -->
+<section class="screen full" id="s-pR">
+  <div class="big" id="prTitle"></div>
+  <div id="prPts" style="font-size:28px;font-weight:800"></div>
+  <div id="prRank" style="font-size:22px"></div>
+</section>
+
+<!-- Финал -->
+<section class="screen" id="s-end">
+  <h1>Итоги</h1>
+  <div class="podium" id="podium"></div>
+  <div class="rows" id="endRows"></div>
+  <button class="primary" id="againBtn">В меню</button>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const SHAPES = ['▲','◆','●','■'];
+let token = localStorage.getItem('lq_token'), myName = localStorage.getItem('lq_name'), socket = null;
+let mode = 'login', countdown = null, multiSel = new Set(), curQ = null, answered = false;
+
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); $(id).classList.add('on'); }
+const esc = (s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(url, body){
+  const r = await fetch(url,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:body?JSON.stringify(body):undefined});
+  const d = await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||'Ошибка'); return d;
+}
+
+/* --- вход / регистрация --- */
+function setMode(m){ mode=m; $('tabLogin').classList.toggle('on',m==='login'); $('tabReg').classList.toggle('on',m==='reg');
+  $('aName').hidden = m!=='reg'; $('aGo').textContent = m==='reg'?'Зарегистрироваться':'Войти'; $('aErr').textContent=''; }
+$('tabLogin').onclick=()=>setMode('login'); $('tabReg').onclick=()=>setMode('reg');
+$('aGo').onclick = async ()=>{
+  try{
+    const body={username:$('aUser').value,password:$('aPass').value};
+    if(mode==='reg') body.name=$('aName').value;
+    const d = await api(mode==='reg'?'/api/register':'/api/login', body);
+    token=d.token; myName=d.name; localStorage.setItem('lq_token',token); localStorage.setItem('lq_name',myName);
+    enter();
+  }catch(e){ $('aErr').textContent=e.message; }
+};
+$('logout').onclick=()=>{ localStorage.clear(); location.reload(); };
+
+/* --- вход в приложение --- */
+async function enter(){
+  $('topbar').hidden=false; $('who').textContent=myName;
+  if(socket) socket.disconnect();
+  socket = io({auth:{token}}); bindSocket();
+  show('s-menu');
+  try{ const m=await api('/api/me'); const adm=m.role==='admin';
+    $('hostBtn').hidden=!adm; $('joinBox').hidden=adm; $('lbBox').innerHTML='';
+    $('stats').textContent = adm ? 'Вы админ: только вы создаёте, начинаете и завершаете игру' : `Игр сыграно: ${m.gamesPlayed} · Баллов всего: ${m.totalScore}`; }catch{ localStorage.clear(); location.reload(); }
+}
+$('lbBtn').onclick=async()=>{
+  const top=await api('/api/leaderboard');
+  $('lbBox').innerHTML = top.length? top.map((u,i)=>`<div class="row"><span>${i+1}</span><span>${esc(u.name)}</span><b>${u.totalScore}</b></div>`).join('') : '<div class="small">Пока никто не играл</div>';
+};
+$('hostBtn').onclick=()=>socket.emit('host:create');
+$('joinBtn').onclick=()=>socket.emit('player:join',{pin:$('pinIn').value});
+$('startBtn').onclick=()=>socket.emit('host:start');
+$('nextBtn').onclick=()=>socket.emit('host:next');
+['endBtn1','endBtn2','endBtn3'].forEach(id=>$(id).onclick=()=>{ if(confirm('Завершить игру?')) socket.emit('host:end'); });
+$('againBtn').onclick=()=>{ show('s-menu'); enter(); };
+
+/* --- таймер --- */
+function startTimer(el, sec){
+  clearInterval(countdown); const end=Date.now()+sec*1000;
+  const tick=()=>{ el.textContent=Math.max(0,Math.ceil((end-Date.now())/1000)); };
+  tick(); countdown=setInterval(tick,250);
+}
+
+function optsHTML(q, tag, extra){
+  return q.options.map((t,i)=>`<${tag} class="opt o${i%4}" data-i="${i}"><span class="sh">${SHAPES[i%4]}</span><span>${esc(t)}</span>${extra?extra(i):''}</${tag}>`).join('');
+}
+
+/* --- сокет --- */
+function bindSocket(){
+  socket.on('connect_error',()=>{ localStorage.clear(); location.reload(); });
+  socket.on('error:msg',(m)=>{ $('mErr').textContent=m; $('hErr').textContent=m; });
+
+  // ведущий
+  socket.on('host:created',({pin,total})=>{ $('hPin').textContent=pin; $('hPlayers').innerHTML=''; $('hCount').textContent=`Вопросов: ${total}. Ждём игроков…`; $('hErr').textContent=''; show('s-hostLobby'); });
+  socket.on('lobby:update',({players})=>{ $('hPlayers').innerHTML=players.map(n=>`<span class="chip">${esc(n)}</span>`).join(''); $('hCount').textContent=`Игроков: ${players.length}`; });
+
+  // игрок
+  socket.on('player:joined',({name})=>{ $('wName').textContent=name; $('wTitle').textContent='Вы в игре!'; $('mErr').textContent=''; show('s-wait'); });
+
+  // вопрос — видят все, но показ разный
+  socket.on('question',(q)=>{
+    curQ=q; answered=false; multiSel=new Set();
+    const isHost = $('s-hostLobby').classList.contains('on') || $('s-hostR').classList.contains('on') || $('s-hostQ').classList.contains('on');
+    if(isHost){
+      $('hqNum').textContent=`${q.index+1} / ${q.total}`; $('hqAns').textContent='Ответили: 0'; $('hqText').textContent=q.text;
+      $('hqOpts').innerHTML=optsHTML(q,'div'); startTimer($('hqTimer'),q.time); show('s-hostQ');
+    } else {
+      $('pqNum').textContent=`${q.index+1} / ${q.total}`; $('pqHint').textContent=q.type==='multi'?'Выберите все верные и нажмите «Ответить»':q.text;
+      if(q.type==='multi') $('pqHint').textContent=q.text+' — нажмите «Ответить» после выбора';
+      $('pqOpts').innerHTML=optsHTML(q,'button'); $('sendMulti').hidden=q.type!=='multi'; startTimer($('pqTimer'),q.time); show('s-pQ');
+    }
+  });
+  socket.on('answer:count',({count,total})=>{ $('hqAns').textContent=`Ответили: ${count} / ${total}`; });
+  socket.on('answer:ack',()=>{ answered=true; $('pqHint').textContent='Ответ принят. Ждём остальных…'; $('sendMulti').hidden=true; document.querySelectorAll('#pqOpts .opt').forEach(b=>b.disabled=true); });
+
+  socket.on('question:results',({correctIdx,dist,top,last})=>{
+    clearInterval(countdown);
+    $('hrOpts').innerHTML=optsHTML(curQ,'div',(i)=>`<span class="cnt">${dist[i]}</span>${correctIdx.includes(i)?'<span class="tick">✔</span>':''}`);
+    document.querySelectorAll('#hrOpts .opt').forEach((el,i)=>{ if(!correctIdx.includes(i)) el.classList.add('dim'); });
+    $('hrTop').innerHTML=top.map(r=>`<div class="row"><span>${r.rank}</span><span>${esc(r.name)}</span><b>${r.score}</b></div>`).join('');
+    $('nextBtn').textContent=last?'Показать итоги':'Дальше'; show('s-hostR');
+  });
+  socket.on('result',(r)=>{
+    clearInterval(countdown);
+    const s=$('s-pR'); s.className='screen full on '+(r.correct?'ok':(r.answered?'bad':'wait'));
+    $('prTitle').textContent=r.correct?'Верно!':(r.answered?'Неверно':'Время вышло');
+    $('prPts').textContent=r.correct?'+1 балл':(r.answered?'−1 балл':'0 баллов');
+    $('prRank').textContent=`Вы на ${r.rank} месте · всего баллов: ${r.score}`;
+    document.querySelectorAll('.screen').forEach(x=>{ if(x!==s) x.classList.remove('on'); });
+  });
+  socket.on('game:end',({leaderboard})=>{
+    clearInterval(countdown);
+    const p=leaderboard.slice(0,3), order=[1,0,2];
+    $('podium').innerHTML=order.filter(i=>p[i]).map(i=>`<div class="pod p${i+1}"><div style="font-size:32px">${i+1}</div><div>${esc(p[i].name)}</div><div>${p[i].score}</div></div>`).join('');
+    $('endRows').innerHTML=leaderboard.map(r=>`<div class="row ${r.name===myName?'me':''}"><span>${r.rank}</span><span>${esc(r.name)}</span><b>${r.score}</b></div>`).join('');
+    show('s-end');
+  });
+  socket.on('game:closed',()=>{ alert('Ведущий закрыл игру'); enter(); });
+}
+
+/* --- ответы игрока --- */
+$('pqOpts').addEventListener('click',(e)=>{
+  const b=e.target.closest('.opt'); if(!b||answered) return; const i=+b.dataset.i;
+  if(curQ.type==='multi'){ multiSel.has(i)?multiSel.delete(i):multiSel.add(i); b.classList.toggle('sel'); }
+  else socket.emit('player:answer',{choice:[i]});
+});
+$('sendMulti').onclick=()=>{ if(multiSel.size) socket.emit('player:answer',{choice:[...multiSel]}); };
+
+if(token) enter(); else show('s-auth');
+</script>
+</body>
+</html>

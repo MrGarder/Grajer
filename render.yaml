@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: legal-quiz
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: MONGODB_URI
+        sync: false        # вставите строку из MongoDB Atlas в панели Render
+      - key: ADMIN_PASSWORD
+        sync: false        # пароль админа MrGarder
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_VERSION
+        value: 20
